@@ -1,0 +1,275 @@
+openapi: 3.0.0
+servers:
+  # Added by API Auto Mocking Plugin
+  - description: SwaggerHub API Auto Mocking
+    url: https://virtserver.swaggerhub.com/krtvand8/jinja_service/1.0.0
+info:
+  description: Render farm API
+  version: "1.0.0"
+  title: Render farm API
+  license:
+    name: Apache 2.0
+    url: 'http://www.apache.org/licenses/LICENSE-2.0.html'
+tags:
+  - name: jinja_service
+  - name: render_orchestrator
+  - name: delivery_service
+  - name: agent
+paths:
+  /save_renders:
+    post:
+      tags:
+        - delivery_service
+      summary: Save list of renders of template
+      requestBody:
+        content:
+          application/gzip:
+              schema:
+                type: string
+                format: binary
+      responses:
+        '200':
+          description: success
+  
+  /get_template_renders:
+    post:
+      tags:
+        - delivery_service
+      summary: Get list of renders for template
+      responses:
+        '200':
+          description: archive of config files
+          content:
+            application/gzip:
+              schema:
+                type: string
+                format: binary
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                render_hash_list:
+                  example:
+                  - filter.tpl.0x10647d3cef0e777175aa45362934b0c843732d16
+                  - filter.tpl.0x116ddf589027eec6ae6580af18b2cfdd481666a3
+                  items:
+                    type: string
+                  title: Render Hash List
+                  type: array
+                template_name:
+                  example: filter.tpl
+                  title: Template Name
+                  type: string
+              required:
+              - template_name
+              - render_hash_list
+              title: RenderForTemplateCreatedSchema
+              type: object
+  /config_for_template_created:
+    post:
+      tags:
+        - agent
+      summary: event published by render orchestrator when template have been processed
+      responses:
+        '200':
+          description: event accepted
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                agent_layers_path:
+                  items:
+                    items:
+                      $ref: '#/components/schemas/Layer'
+                    type: array
+                  title: Agent Layers Path
+                  type: array
+                render_hash_list:
+                  example:
+                  - filter.tpl.0x10647d3cef0e777175aa45362934b0c843732d16
+                  - filter.tpl.0x116ddf589027eec6ae6580af18b2cfdd481666a3
+                  items:
+                    type: string
+                  title: Render Hash List
+                  type: array
+                template_name:
+                  example: filter.tpl
+                  title: Template Name
+                  type: string
+              required:
+              - template_name
+              - render_hash_list
+              - agent_layers_path
+              title: ConfigForTemplateCreatedSchema
+              type: object
+            
+  /set_config:
+    post:
+      tags:
+        - agent
+      summary: checkout to new state
+      responses:
+        '200':
+          description: ok
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/AgentTemplates'
+              title: SetConfigRequestSchema
+              type: array
+  
+  /make_config:
+    post:
+      tags:
+        - render_orchestrator
+      summary: make config for list of agents
+      responses:
+        '200':
+          description: config created successfully
+         
+      requestBody:
+        content:
+          application/json:
+            schema:
+              items:
+                $ref: '#/components/schemas/MakeConfigRequestSchema'
+              title: MakeConfigListSchema
+              type: array
+  /render_template:
+    post:
+      tags:
+        - jinja_service
+      summary: create config files for one template and one layer path
+      responses:
+        '200':
+          description: templated processed successfully
+          content:
+            application/json:
+              schema:
+                properties:
+                  render_hash_list:
+                    example: 
+                    - filter.tpl.0x10647d3cef0e777175aa45362934b0c843732d16
+                    - filter.tpl.0x116ddf589027eec6ae6580af18b2cfdd481666a3
+                    items:
+                      type: string
+                    title: Render Hash List
+                    type: array
+                required:
+                - render_hash_list
+                title: RenderTemplateResponseSchema
+                type: object
+      requestBody:
+        content:
+          application/json:
+            schema:
+              properties:
+                agent_layers_path:
+                  items:
+                    items:
+                      $ref: '#/components/schemas/Layer'
+                    type: array
+                  title: Agent Layers Path
+                  type: array
+                common_layers_path:
+                  items:
+                    $ref: '#/components/schemas/Layer'
+                  title: Common Layers Path
+                  type: array
+                context:
+                  example:
+                    backend_ip: 1.2.3.4
+                    qnet_my_id: 1
+                  title: Context
+                  type: object
+                preselect_query:
+                  anyOf:
+                  - type: string
+                  - items:
+                      type: string
+                    type: array
+                  example: filter_config
+                  title: Preselect Query
+                template_name:
+                  example: filter.tpl
+                  title: Template Name
+                  type: string
+              required:
+              - template_name
+              - common_layers_path
+              - agent_layers_path
+              title: MakeRenderRequestSchema
+              type: object
+
+        
+components:
+  schemas:
+    AgentTemplates:
+      properties:
+        context:
+          example:
+            backend_ip: 1.2.3.4
+            qnet_my_id: 1
+          title: Context
+          type: object
+        template_name:
+          example: filter.tpl
+          title: Name
+          type: string
+        template_version:
+          example: 100500
+          title: Version
+          type: integer
+      required:
+      - name
+      - version
+      - context
+      title: AgentTemplates
+      type: object
+    MakeConfigRequestSchema:
+      properties:
+        agent_name:
+          title: Agent Name
+          example: AgentHoplite0201
+          type: string
+        layers_order:
+          example:
+          - qrator:services:stable
+          - qrator:services:latest
+          items:
+            type: string
+          title: Layers Order
+          type: array
+        template_list:
+          items:
+            type: string
+          title: Template List
+          type: array
+          example:
+          - filter.tpl
+          - filter_v2.tpl
+      required:
+      - agent_name
+      - layers_order
+      - template_list
+      title: MakeConfigRequestSchema
+      type: object
+    Layer:
+      properties:
+        name:
+          example: qrator:services:stable
+          title: Name
+          type: string
+        version:
+          example: 100500
+          title: Version
+          type: integer
+      required:
+      - name
+      - version
+      title: Layer
+      type: object
